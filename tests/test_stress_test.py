@@ -34,6 +34,18 @@ from stress_test.models.credit_spreads import CreditSpreadModel
 from stress_test.models.market_shock import MarketShockModel
 from stress_test.models.leverage_risk import LeverageRiskModel
 from stress_test.simulator import StressTestSimulator
+from stress_test.portfolio.broker_dealer_portfolios import (
+    build_jpmorgan_portfolio,
+    build_goldman_sachs_portfolio,
+    build_fidelity_portfolio,
+    build_bank_of_america_portfolio,
+    build_credit_suisse_portfolio,
+    build_lpl_financial_portfolio,
+    build_ubs_portfolio,
+    build_barclays_portfolio,
+    build_all_broker_dealer_portfolios,
+    ALL_BROKER_DEALER_PORTFOLIOS,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -479,6 +491,108 @@ class TestSimulatorIntegration:
             severity_steps=5,
         )
         assert "critical_multiplier" in result
+
+
+# ---------------------------------------------------------------------------
+# Broker-dealer / custodian portfolio tests
+# ---------------------------------------------------------------------------
+
+BROKER_DEALER_BUILDERS = [
+    ("jpmorgan", build_jpmorgan_portfolio),
+    ("goldman_sachs", build_goldman_sachs_portfolio),
+    ("fidelity", build_fidelity_portfolio),
+    ("bank_of_america", build_bank_of_america_portfolio),
+    ("credit_suisse", build_credit_suisse_portfolio),
+    ("lpl_financial", build_lpl_financial_portfolio),
+    ("ubs", build_ubs_portfolio),
+    ("barclays", build_barclays_portfolio),
+]
+
+
+class TestBrokerDealerPortfolios:
+    """Sanity and structural tests for all simulated broker-dealer portfolios."""
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_portfolio_has_assets(self, key, builder):
+        p = builder()
+        assert len(p.assets) > 0, f"{key}: portfolio should have assets"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_total_market_value_positive(self, key, builder):
+        p = builder()
+        assert p.total_market_value > 0, f"{key}: total market value should be positive"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_tier1_capital_positive(self, key, builder):
+        p = builder()
+        assert p.tier1_capital > 0, f"{key}: Tier-1 capital should be positive"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_leverage_ratio_finite_and_positive(self, key, builder):
+        p = builder()
+        lr = p.leverage_ratio
+        assert math.isfinite(lr) and lr > 1.0, f"{key}: leverage ratio should be finite and > 1"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_cet1_ratio_plausible(self, key, builder):
+        p = builder()
+        cet1 = p.cet1_ratio()
+        # Real-world CET1 ratios are typically 5–20%
+        assert 0.04 <= cet1 <= 0.30, f"{key}: CET1 ratio {cet1:.2%} is outside plausible range"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_concentration_sums_to_one(self, key, builder):
+        p = builder()
+        conc = p.concentration_by_type()
+        assert conc.sum() == pytest.approx(1.0, abs=1e-6), \
+            f"{key}: concentration_by_type should sum to 1"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_herfindahl_index_valid(self, key, builder):
+        p = builder()
+        hhi = p.herfindahl_index()
+        assert 0 <= hhi <= 1.0, f"{key}: HHI should be in [0, 1]"
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_summary_dataframe_nonempty(self, key, builder):
+        p = builder()
+        df = p.summary()
+        assert len(df) == len(p.assets), f"{key}: summary() row count should match asset count"
+
+    def test_build_all_returns_all_eight(self):
+        portfolios = build_all_broker_dealer_portfolios()
+        assert set(portfolios.keys()) == {
+            "jpmorgan", "goldman_sachs", "fidelity", "bank_of_america",
+            "credit_suisse", "lpl_financial", "ubs", "barclays",
+        }
+
+    def test_all_broker_dealer_portfolios_registry(self):
+        assert set(ALL_BROKER_DEALER_PORTFOLIOS.keys()) == {
+            "jpmorgan", "goldman_sachs", "fidelity", "bank_of_america",
+            "credit_suisse", "lpl_financial", "ubs", "barclays",
+        }
+
+    @pytest.mark.parametrize("key, builder", BROKER_DEALER_BUILDERS)
+    def test_stress_scenario_runs(self, key, builder):
+        """Each broker-dealer portfolio should survive a single stress-test scenario."""
+        p = builder()
+        sim = StressTestSimulator(
+            portfolio=p,
+            n_simulations=100,
+            seed=0,
+            verbose=False,
+        )
+        result = sim.run_scenario(SCENARIO_LIBRARY["moderate_recession"])
+        assert result.combined_loss_estimate >= 0, \
+            f"{key}: combined loss estimate should be non-negative"
+        assert math.isfinite(result.leverage.post_stress.cet1_ratio), \
+            f"{key}: post-stress CET1 ratio should be finite"
+
+    def test_jpmorgan_larger_than_lpl(self):
+        """JPMorgan should have a materially larger total market value than LPL Financial."""
+        jpm = build_jpmorgan_portfolio()
+        lpl = build_lpl_financial_portfolio()
+        assert jpm.total_market_value > lpl.total_market_value * 10
 
 
 if __name__ == "__main__":
