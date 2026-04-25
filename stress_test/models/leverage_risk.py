@@ -182,23 +182,6 @@ class LeverageRiskModel:
         """
         Compute capital metrics after applying a stressed loss.
 
-        Parameters
-        ----------
-        portfolio : Portfolio
-        stressed_loss : float
-            Post-tax losses applied to capital (positive = adverse).
-        stressed_rwa_increase_pct : float
-            RWA typically rises in stress due to rating downgrades and model risk.
-        """
-    def compute_stressed_metrics(
-        self,
-        portfolio,
-        stressed_loss: float,
-        stressed_rwa_increase_pct: float = 0.20,
-    ) -> CapitalMetrics:
-        """
-        Compute capital metrics after applying a stressed loss.
-
         Net capital consumption = stressed_loss - pre_provision_net_revenue,
         where PPNR is estimated from the stressed NIM over a 9-quarter horizon
         and partially offsets the loss.
