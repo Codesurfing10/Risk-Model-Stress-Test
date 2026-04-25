@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Risk Model Stress Test — Banking Stress Test Simulator</title>
+  <style>
+    :root {
+      --navy: #0d1b2a;
+      --blue: #1565c0;
+      --accent: #1e88e5;
+      --light-blue: #e3f2fd;
+      --text: #212121;
+      --muted: #546e7a;
+      --border: #cfd8dc;
+      --white: #ffffff;
+      --green: #2e7d32;
+      --red: #c62828;
+      --orange: #e65100;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: #f5f7fa;
+      line-height: 1.6;
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, #1a237e 60%, var(--blue) 100%);
+      color: var(--white);
+      padding: 60px 24px 80px;
+      text-align: center;
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    header p.tagline {
+      font-size: 1.15rem;
+      opacity: 0.85;
+      max-width: 640px;
+      margin: 0 auto 36px;
+    }
+    .cta-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--accent); color: var(--white); }
+    .btn-outline { background: transparent; color: var(--white); border: 2px solid rgba(255,255,255,0.5); }
+
+    /* ── Stats bar ────────────────────────────────────────────────── */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat {
+      padding: 20px 36px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat .num { font-size: 1.7rem; font-weight: 700; color: var(--blue); }
+    .stat .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Main layout ──────────────────────────────────────────────── */
+    main { max-width: 1100px; margin: 0 auto; padding: 60px 24px; }
+
+    section { margin-bottom: 72px; }
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 24px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--light-blue);
+    }
+    h3 { font-size: 1.1rem; font-weight: 600; color: var(--blue); margin-bottom: 8px; }
+    p { color: var(--muted); margin-bottom: 12px; }
+
+    /* ── Method grid ──────────────────────────────────────────────── */
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .method-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .method-card .icon { font-size: 1.8rem; margin-bottom: 10px; }
+
+    /* ── Scenario table ───────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--white);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    thead { background: var(--navy); color: var(--white); }
+    th { padding: 12px 16px; text-align: left; font-weight: 600; }
+    td { padding: 11px 16px; border-top: 1px solid var(--border); }
+    tr:hover td { background: var(--light-blue); }
+    .sev-extreme { color: var(--red); font-weight: 700; }
+    .sev-severe  { color: var(--orange); font-weight: 600; }
+    .sev-moderate{ color: var(--green); font-weight: 600; }
+
+    /* ── Code block ───────────────────────────────────────────────── */
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 24px;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace; }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89b4fa; }
+    .str { color: #a6e3a1; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .num { color: #fab387; }
+
+    /* ── Capital table ────────────────────────────────────────────── */
+    .capital-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .capital-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .capital-card .ratio { font-size: 1.5rem; font-weight: 700; color: var(--green); }
+    .capital-card .name  { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Architecture ─────────────────────────────────────────────── */
+    .arch-tree {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 32px;
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 0.87rem;
+      line-height: 1.9;
+      color: var(--text);
+    }
+    .arch-tree .dir  { color: var(--blue); font-weight: 700; }
+    .arch-tree .file { color: var(--muted); }
+    .arch-tree .cmt  { color: #90a4ae; font-style: italic; }
+
+    /* ── Install ──────────────────────────────────────────────────── */
+    .install-steps { display: grid; gap: 16px; }
+    .step {
+      display: flex;
+      gap: 16px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 32px; height: 32px; min-width: 32px;
+      background: var(--blue);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem;
+    }
+    .step code {
+      background: #f0f4ff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      color: var(--blue);
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.88rem;
+      background: var(--white);
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ HERO ═══════════════════════════════ -->
+<header>
+  <div class="badge">Open Source · Python · Finance</div>
+  <h1>Risk Model Stress Test</h1>
+  <p class="tagline">
+    A comprehensive banking stress-test simulator for large institutional firms
+    with complex multi-asset portfolios — combining four complementary methodologies.
+  </p>
+  <div class="cta-group">
+    <a class="btn btn-primary" href="https://github.com/Codesurfing10/Risk-Model-Stress-Test">View on GitHub</a>
+    <a class="btn btn-outline" href="https://github.com/Codesurfing10/Risk-Model-Stress-Test/archive/refs/heads/main.zip">Download ZIP</a>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ STATS ══════════════════════════════ -->
+<div class="stats-bar">
+  <div class="stat"><div class="num">4</div><div class="label">Stress Methods</div></div>
+  <div class="stat"><div class="num">7</div><div class="label">Built-in Scenarios</div></div>
+  <div class="stat"><div class="num">13</div><div class="label">Risk Factors (Monte Carlo)</div></div>
+  <div class="stat"><div class="num">47</div><div class="label">Unit Tests</div></div>
+  <div class="stat"><div class="num">~$360B</div><div class="label">Demo Portfolio Size</div></div>
+</div>
+
+<!-- ═══════════════════════════════ MAIN ═══════════════════════════════ -->
+<main>
+
+  <!-- Overview -->
+  <section>
+    <h2>Overview</h2>
+    <div class="method-grid">
+      <div class="method-card">
+        <div class="icon">🏦</div>
+        <h3>Bottom-Up</h3>
+        <p>Instrument-level PD/LGD/EAD credit loss with Vasicek unexpected loss (ASRF model).</p>
+      </div>
+      <div class="method-card">
+        <div class="icon">📈</div>
+        <h3>Top-Down</h3>
+        <p>Macro-factor regression on sector loss rates with CECL / IFRS-9 provisioning.</p>
+      </div>
+      <div class="method-card">
+        <div class="icon">🎲</div>
+        <h3>Monte Carlo</h3>
+        <p>13-factor correlated simulation using Gaussian or Student-t copula for VaR &amp; ES.</p>
+      </div>
+      <div class="method-card">
+        <div class="icon">⚡</div>
+        <h3>Market Shock</h3>
+        <p>Instantaneous scenario shocks propagated across all asset classes simultaneously.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pre-built Scenarios -->
+  <section>
+    <h2>Pre-Built Stress Scenarios</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario Key</th>
+            <th>Name</th>
+            <th>Severity</th>
+            <th>Equity</th>
+            <th>GDP Shock</th>
+            <th>BBB Spread</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>gfc_2008</code></td><td>2008 Global Financial Crisis</td><td class="sev-extreme">Extreme</td><td>−55 %</td><td>−4.5 %</td><td>+500 bps</td></tr>
+          <tr><td><code>covid_2020</code></td><td>COVID-19 Pandemic Shock</td><td class="sev-severe">Severe</td><td>−34 %</td><td>−6.5 %</td><td>+400 bps</td></tr>
+          <tr><td><code>stagflation</code></td><td>Stagflation</td><td class="sev-severe">Severe</td><td>−35 %</td><td>−3.0 %</td><td>+350 bps</td></tr>
+          <tr><td><code>sovereign_debt_crisis</code></td><td>Sovereign Debt Crisis</td><td class="sev-severe">Severe</td><td>−30 %</td><td>−2.5 %</td><td>+350 bps</td></tr>
+          <tr><td><code>moderate_recession</code></td><td>Moderate Recession</td><td class="sev-moderate">Moderate</td><td>−20 %</td><td>−2.0 %</td><td>+200 bps</td></tr>
+          <tr><td><code>rate_shock</code></td><td>Rapid Rate Rise Shock</td><td class="sev-moderate">Moderate</td><td>−15 %</td><td>−1.0 %</td><td>+200 bps</td></tr>
+          <tr><td><code>extreme_tail</code></td><td>Extreme Tail Risk</td><td class="sev-extreme">Extreme</td><td>−70 %</td><td>−10 %</td><td>+1000 bps</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section>
+    <h2>Quick Start</h2>
+    <div class="install-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <strong>Clone the repository</strong><br />
+          <code>git clone https://github.com/Codesurfing10/Risk-Model-Stress-Test.git</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <strong>Install dependencies</strong><br />
+          <code>pip install -r requirements.txt</code>
+          <p style="margin-top:6px;font-size:0.85rem;">numpy · scipy · pandas · matplotlib · seaborn · tabulate</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <strong>Run the end-to-end demo</strong><br />
+          <code>python examples/run_stress_test.py</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <strong>Run the test suite</strong><br />
+          <code>python -m pytest tests/test_stress_test.py -v</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Code Example -->
+  <section>
+    <h2>Code Example</h2>
+    <pre><code><span class="kw">from</span> stress_test.portfolio.assets <span class="kw">import</span> LoanAsset, BondAsset, CreditRating
+<span class="kw">from</span> stress_test.portfolio.portfolio <span class="kw">import</span> Portfolio
+<span class="kw">from</span> stress_test.simulator <span class="kw">import</span> StressTestSimulator
+<span class="kw">from</span> stress_test.reporting.reports <span class="kw">import</span> StressTestReport
+
+<span class="cm"># ── Build portfolio ──────────────────────────────────────────────────</span>
+portfolio = <span class="fn">Portfolio</span>(
+    name=<span class="str">"My Bank"</span>,
+    tier1_capital=<span class="num">50_000_000_000</span>,
+    tier2_capital=<span class="num">10_000_000_000</span>,
+    total_liabilities=<span class="num">440_000_000_000</span>,
+)
+portfolio.<span class="fn">add_asset</span>(<span class="fn">LoanAsset</span>(
+    asset_id=<span class="str">"L1"</span>, name=<span class="str">"Corp Loan"</span>,
+    notional=<span class="num">20e9</span>, market_value=<span class="num">20e9</span>,
+    sector=<span class="str">"corporate"</span>, rating=CreditRating.BBB, lgd=<span class="num">0.40</span>, maturity_years=<span class="num">5</span>,
+))
+
+<span class="cm"># ── Run stress tests (all 7 scenarios + Monte Carlo) ─────────────────</span>
+simulator = <span class="fn">StressTestSimulator</span>(portfolio, n_simulations=<span class="num">10_000</span>, copula=<span class="str">"student_t"</span>, seed=<span class="num">42</span>)
+results   = simulator.<span class="fn">run_all_scenarios</span>()
+
+<span class="cm"># ── Print report & export Excel ──────────────────────────────────────</span>
+report = <span class="fn">StressTestReport</span>(results, portfolio, scale=<span class="num">1e9</span>, scale_suffix=<span class="str">"B"</span>)
+report.<span class="fn">print_report</span>()
+report.<span class="fn">to_excel</span>(<span class="str">"stress_test_results.xlsx"</span>)
+
+<span class="cm"># ── Reverse stress test ──────────────────────────────────────────────</span>
+reverse = simulator.<span class="fn">reverse_stress_test</span>(
+    target_cet1_ratio=<span class="num">0.045</span>,
+    base_scenario_name=<span class="str">"moderate_recession"</span>,
+    severity_steps=<span class="num">25</span>,
+)
+<span class="fn">print</span>(<span class="str">f"CET1 breach at <span class="kw">{</span>reverse[<span class="str">'critical_multiplier'</span>]:<span class="num">.2f</span><span class="kw">}</span>x severity"</span>)</code></pre>
+  </section>
+
+  <!-- Capital Adequacy -->
+  <section>
+    <h2>Basel III / DFAST Capital Thresholds</h2>
+    <div class="capital-grid">
+      <div class="capital-card"><div class="ratio">4.5 %</div><div class="name">CET1 Minimum</div></div>
+      <div class="capital-card"><div class="ratio">6.0 %</div><div class="name">Tier-1 Minimum</div></div>
+      <div class="capital-card"><div class="ratio">8.0 %</div><div class="name">Total Capital Minimum</div></div>
+      <div class="capital-card"><div class="ratio">3.0 %</div><div class="name">Tier-1 Leverage Minimum</div></div>
+      <div class="capital-card"><div class="ratio">+2.5 %</div><div class="name">Capital Conservation Buffer</div></div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section>
+    <h2>Repository Architecture</h2>
+    <div class="arch-tree">
+<span class="dir">stress_test/</span><br>
+&nbsp;&nbsp;├── <span class="dir">portfolio/</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">assets.py</span> &nbsp;&nbsp;&nbsp;<span class="cmt"># LoanAsset, BondAsset, EquityAsset, DerivativeAsset, RealEstateAsset</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="file">portfolio.py</span> &nbsp;<span class="cmt"># Portfolio container — aggregation, RWA, HHI, CET1</span><br>
+&nbsp;&nbsp;├── <span class="dir">scenarios/</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="file">recession_scenarios.py</span> &nbsp;<span class="cmt"># RecessionScenario dataclass + 7 named scenarios</span><br>
+&nbsp;&nbsp;├── <span class="dir">models/</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">bottom_up.py</span> &nbsp;&nbsp;&nbsp;<span class="cmt"># Vasicek ASRF credit loss model</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">top_down.py</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># Macro-factor regression + CECL/IFRS-9 provisioning</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">monte_carlo.py</span> &nbsp;<span class="cmt"># Cholesky-correlated Monte Carlo engine</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">credit_spreads.py</span> <span class="cmt"># Spread widening MTM + rating transition matrix</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">market_shock.py</span> &nbsp;<span class="cmt"># Instantaneous scenario shock propagation</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="file">leverage_risk.py</span> <span class="cmt"># Basel III capital adequacy + DFAST assessment</span><br>
+&nbsp;&nbsp;├── <span class="dir">reporting/</span><br>
+&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="file">reports.py</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># Text reports + Excel export</span><br>
+&nbsp;&nbsp;└── <span class="file">simulator.py</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># Orchestrator — runs all modules, reverse stress test</span><br>
+<span class="dir">examples/</span><br>
+&nbsp;&nbsp;└── <span class="file">run_stress_test.py</span> &nbsp;<span class="cmt"># End-to-end demo (~$360B portfolio)</span><br>
+<span class="dir">tests/</span><br>
+&nbsp;&nbsp;└── <span class="file">test_stress_test.py</span> &nbsp;<span class="cmt"># 47 unit + integration tests</span>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════ FOOTER ═════════════════════════════ -->
+<footer>
+  <p>
+    <a href="https://github.com/Codesurfing10/Risk-Model-Stress-Test">GitHub Repository</a> ·
+    Built with Python · Open Source
+  </p>
+  <p style="margin-top:8px;font-size:0.82rem;">
+    For educational and research purposes. Not financial advice.
+  </p>
+</footer>
+
+</body>
+</html>
