@@ -32,7 +32,7 @@ Usage::
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Callable, Dict
 
 from .assets import BondAsset, CreditRating, DerivativeAsset, EquityAsset, LoanAsset, RealEstateAsset
 from .portfolio import Portfolio
@@ -218,7 +218,7 @@ def build_goldman_sachs_portfolio() -> Portfolio:
             asset_id="GS_LOAN_003", name="Leveraged Finance Originations",
             asset_type=None, notional=60_000_000_000, market_value=60_000_000_000,
             sector="corporate", rating=CreditRating.B,
-            lgd=0.55, maturity_years=5.0,
+            lgd=0.55, maturity_years=5.0, is_secured=False,
         ),
     ]
 
@@ -577,7 +577,7 @@ def build_credit_suisse_portfolio() -> Portfolio:
             asset_id="CS_LOAN_002", name="Investment Bank Leveraged Finance",
             asset_type=None, notional=40_000_000_000, market_value=40_000_000_000,
             sector="corporate", rating=CreditRating.B,
-            lgd=0.58, maturity_years=5.0,
+            lgd=0.58, maturity_years=5.0, is_secured=False,
         ),
         LoanAsset(
             asset_id="CS_LOAN_003", name="Swiss Corporate Loans",
@@ -589,7 +589,7 @@ def build_credit_suisse_portfolio() -> Portfolio:
             asset_id="CS_LOAN_004", name="Distressed & Restructured Loans",
             asset_type=None, notional=15_000_000_000, market_value=12_000_000_000,
             sector="corporate", rating=CreditRating.CCC,
-            lgd=0.75, maturity_years=3.0,
+            lgd=0.75, maturity_years=3.0, is_secured=False,
         ),
     ]
 
@@ -784,7 +784,7 @@ def build_ubs_portfolio() -> Portfolio:
             asset_id="UBS_LOAN_003", name="Investment Bank Leveraged Finance",
             asset_type=None, notional=30_000_000_000, market_value=30_000_000_000,
             sector="corporate", rating=CreditRating.B,
-            lgd=0.52, maturity_years=5.0,
+            lgd=0.52, maturity_years=5.0, is_secured=False,
         ),
     ]
 
@@ -1033,7 +1033,7 @@ def build_all_broker_dealer_portfolios() -> Dict[str, Portfolio]:
 
 
 #: Convenience mapping of institution key → builder function.
-ALL_BROKER_DEALER_PORTFOLIOS: Dict[str, "callable"] = {
+ALL_BROKER_DEALER_PORTFOLIOS: Dict[str, Callable[[], Portfolio]] = {
     "jpmorgan": build_jpmorgan_portfolio,
     "goldman_sachs": build_goldman_sachs_portfolio,
     "fidelity": build_fidelity_portfolio,
