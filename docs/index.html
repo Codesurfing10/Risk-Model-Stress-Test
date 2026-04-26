@@ -513,7 +513,7 @@
         </div>
 
         <div class="input-block">
-          <label class="block-title">Portfolio Mix <span class="hint">(auto-normalized to 100 %)</span></label>
+          <label class="block-title">Portfolio Mix <span class="hint">(auto-normalized to 100%)</span></label>
 
           <div class="mix-item">
             <div class="mix-label"><span>🏦 Loans</span><span class="mix-pct" id="pct-loans">41%</span></div>
@@ -698,7 +698,7 @@
       const total = rawMix.loans + rawMix.bonds + rawMix.equities + rawMix.re + rawMix.derivs;
       if (total === 0) return null;
 
-      // Normalised fractions
+      // Normalized fractions
       const fL = rawMix.loans    / total;
       const fB = rawMix.bonds    / total;
       const fE = rawMix.equities / total;
@@ -775,7 +775,7 @@
         derivs:   parseFloat(el("mix-derivs").value),
       };
 
-      // Normalised percentages for display
+      // Normalized percentages for display
       const total = Object.values(rawMix).reduce((a, b) => a + b, 0) || 1;
       el("pct-loans").textContent    = Math.round(rawMix.loans    / total * 100) + "%";
       el("pct-bonds").textContent    = Math.round(rawMix.bonds    / total * 100) + "%";
@@ -798,7 +798,20 @@
 
       // Compute
       const r = computeStress(sizeB, capPct, rawMix, scenarioKey);
-      if (!r) return;
+      if (!r) {
+        // All sliders at zero — show a friendly prompt
+        ["res-loss", "res-loss-pct", "res-cet1"].forEach(function (id) {
+          el(id).textContent = "—";
+        });
+        const dfastEl = el("res-dfast");
+        dfastEl.textContent = "—";
+        dfastEl.className   = "result-big";
+        ["loans", "bonds", "equities", "re", "derivs"].forEach(function (a) {
+          el("bar-" + a).style.width = "0%";
+          el("val-" + a).textContent  = "—";
+        });
+        return;
+      }
 
       // Metrics
       el("res-loss").textContent     = fmtB(r.combinedLoss);
