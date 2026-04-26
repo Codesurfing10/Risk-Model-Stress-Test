@@ -214,6 +214,167 @@
       color: var(--blue);
     }
 
+    /* ── Interactive Simulator ────────────────────────────────────── */
+    .sim-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 760px) {
+      .sim-wrap { grid-template-columns: 1fr; }
+    }
+    .sim-panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .sim-panel h3 { margin-bottom: 16px; margin-top: 0; }
+    .input-block { margin-bottom: 18px; }
+    .block-title {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .block-title .hint {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.78rem;
+    }
+    .sim-panel select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: var(--white);
+    }
+    .sev-tag {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .sev-tag.extreme { background: #fde8e8; color: var(--red); }
+    .sev-tag.severe  { background: #fff3e0; color: var(--orange); }
+    .sev-tag.moderate{ background: #e8f5e9; color: var(--green); }
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .range-row input[type=range] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+    .range-val {
+      min-width: 56px;
+      text-align: right;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .mix-item { margin-bottom: 12px; }
+    .mix-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.87rem;
+      margin-bottom: 3px;
+    }
+    .mix-pct {
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .mix-item input[type=range] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    /* Results panel */
+    .result-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .result-card {
+      background: #f5f7fa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .result-big {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+    .result-label {
+      font-size: 0.74rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+    .dfast-pass { color: var(--green); }
+    .dfast-fail { color: var(--red); }
+    /* Bar chart */
+    .wf-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .wf-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 64px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 0.84rem;
+    }
+    .wf-label { color: var(--text); white-space: nowrap; }
+    .wf-track {
+      background: #e9edf2;
+      border-radius: 4px;
+      height: 14px;
+      overflow: hidden;
+    }
+    .wf-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .wf-val { text-align: right; font-weight: 600; color: var(--navy); }
+    .wf-fill.loans   { background: #1565c0; }
+    .wf-fill.bonds   { background: #0288d1; }
+    .wf-fill.equities{ background: #e65100; }
+    .wf-fill.re      { background: #2e7d32; }
+    .wf-fill.derivs  { background: #6a1b9a; }
+    .sc-desc {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: var(--light-blue);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
     /* ── Footer ───────────────────────────────────────────────────── */
     footer {
       text-align: center;
@@ -309,6 +470,371 @@
       </table>
     </div>
   </section>
+
+  <!-- Interactive Simulator -->
+  <section id="simulator">
+    <h2>🎮 Interactive Portfolio Stress Simulator</h2>
+    <p>Adjust the portfolio mix, capital ratio, and scenario to see real-time stress metrics — all computed live in the browser using the same model parameters as the Python simulator.</p>
+
+    <div class="sim-wrap">
+
+      <!-- ── Left: Configuration ── -->
+      <div class="sim-panel">
+        <h3>Portfolio Configuration</h3>
+
+        <div class="input-block">
+          <label class="block-title">Stress Scenario</label>
+          <select id="sim-scenario">
+            <option value="moderate_recession">Moderate Recession</option>
+            <option value="gfc_2008">2008 Global Financial Crisis</option>
+            <option value="covid_2020">COVID-19 Pandemic Shock</option>
+            <option value="stagflation">Stagflation</option>
+            <option value="sovereign_debt_crisis">Sovereign Debt Crisis</option>
+            <option value="rate_shock">Rapid Rate Rise Shock</option>
+            <option value="extreme_tail">Extreme Tail Risk</option>
+          </select>
+          <span class="sev-tag moderate" id="sim-sev-tag">Moderate</span>
+        </div>
+
+        <div class="input-block">
+          <label class="block-title">Total Portfolio Size</label>
+          <div class="range-row">
+            <input type="range" id="sim-size" min="50" max="800" value="360" step="10">
+            <span class="range-val" id="sim-size-val">$360B</span>
+          </div>
+        </div>
+
+        <div class="input-block">
+          <label class="block-title">Tier-1 Capital Ratio</label>
+          <div class="range-row">
+            <input type="range" id="sim-cap" min="4" max="25" value="14" step="0.5">
+            <span class="range-val" id="sim-cap-val">14.0%</span>
+          </div>
+        </div>
+
+        <div class="input-block">
+          <label class="block-title">Portfolio Mix <span class="hint">(auto-normalized to 100 %)</span></label>
+
+          <div class="mix-item">
+            <div class="mix-label"><span>🏦 Loans</span><span class="mix-pct" id="pct-loans">41%</span></div>
+            <input type="range" class="mix-range" id="mix-loans" min="0" max="100" value="42">
+          </div>
+          <div class="mix-item">
+            <div class="mix-label"><span>📄 Bonds</span><span class="mix-pct" id="pct-bonds">28%</span></div>
+            <input type="range" class="mix-range" id="mix-bonds" min="0" max="100" value="28">
+          </div>
+          <div class="mix-item">
+            <div class="mix-label"><span>📈 Equities</span><span class="mix-pct" id="pct-equities">14%</span></div>
+            <input type="range" class="mix-range" id="mix-equities" min="0" max="100" value="14">
+          </div>
+          <div class="mix-item">
+            <div class="mix-label"><span>🏢 Real Estate</span><span class="mix-pct" id="pct-re">17%</span></div>
+            <input type="range" class="mix-range" id="mix-re" min="0" max="100" value="17">
+          </div>
+          <div class="mix-item">
+            <div class="mix-label"><span>⚖️ Derivatives</span><span class="mix-pct" id="pct-derivs">1%</span></div>
+            <input type="range" class="mix-range" id="mix-derivs" min="0" max="100" value="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Right: Results ── -->
+      <div class="sim-panel">
+        <h3>Stress Test Results</h3>
+
+        <div class="result-metrics">
+          <div class="result-card">
+            <div class="result-big" id="res-loss">—</div>
+            <div class="result-label">Combined Loss Estimate</div>
+          </div>
+          <div class="result-card">
+            <div class="result-big" id="res-loss-pct">—</div>
+            <div class="result-label">% of Portfolio</div>
+          </div>
+          <div class="result-card">
+            <div class="result-big" id="res-cet1">—</div>
+            <div class="result-label">Post-Stress CET1</div>
+          </div>
+          <div class="result-card">
+            <div class="result-big dfast-pass" id="res-dfast">—</div>
+            <div class="result-label">DFAST Status</div>
+          </div>
+        </div>
+
+        <div class="wf-title">Loss by Asset Class</div>
+        <div id="wf-chart">
+          <div class="wf-row">
+            <span class="wf-label">🏦 Loans</span>
+            <div class="wf-track"><div class="wf-fill loans" id="bar-loans" style="width:0%"></div></div>
+            <span class="wf-val" id="val-loans">—</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">📄 Bonds</span>
+            <div class="wf-track"><div class="wf-fill bonds" id="bar-bonds" style="width:0%"></div></div>
+            <span class="wf-val" id="val-bonds">—</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">📈 Equities</span>
+            <div class="wf-track"><div class="wf-fill equities" id="bar-equities" style="width:0%"></div></div>
+            <span class="wf-val" id="val-equities">—</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">🏢 Real Estate</span>
+            <div class="wf-track"><div class="wf-fill re" id="bar-re" style="width:0%"></div></div>
+            <span class="wf-val" id="val-re">—</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">⚖️ Derivatives</span>
+            <div class="wf-track"><div class="wf-fill derivs" id="bar-derivs" style="width:0%"></div></div>
+            <span class="wf-val" id="val-derivs">—</span>
+          </div>
+        </div>
+
+        <div class="sc-desc" id="sim-sc-desc">Select a scenario above to see its description.</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function () {
+    /* ── Scenario data (mirrors recession_scenarios.py) ────────────── */
+    const SCENARIOS = {
+      gfc_2008: {
+        name: "2008 Global Financial Crisis",
+        desc: "Severe financial crisis triggered by subprime mortgage collapse, systemic bank failures, and global credit freeze.",
+        severity: "extreme",
+        gdp_shock: -0.045,
+        equity_decline: -0.55,
+        yield_shift_bps: -200,
+        re_decline: -0.35,
+        pd_multiplier: 5.0,
+        lgd_multiplier: 1.20,
+        credit_spread_bbb: 500,
+        funding_spread_bps: 350,
+      },
+      covid_2020: {
+        name: "COVID-19 Pandemic Shock",
+        desc: "Sudden economic stop due to global pandemic, lockdowns, and supply chain disruption; followed by unprecedented fiscal/monetary stimulus.",
+        severity: "severe",
+        gdp_shock: -0.065,
+        equity_decline: -0.34,
+        yield_shift_bps: -150,
+        re_decline: -0.15,
+        pd_multiplier: 4.0,
+        lgd_multiplier: 1.10,
+        credit_spread_bbb: 400,
+        funding_spread_bps: 150,
+      },
+      stagflation: {
+        name: "Stagflation",
+        desc: "Combination of persistent high inflation forcing aggressive rate hikes alongside economic contraction.",
+        severity: "severe",
+        gdp_shock: -0.03,
+        equity_decline: -0.35,
+        yield_shift_bps: 300,
+        re_decline: -0.25,
+        pd_multiplier: 3.0,
+        lgd_multiplier: 1.15,
+        credit_spread_bbb: 350,
+        funding_spread_bps: 200,
+      },
+      sovereign_debt_crisis: {
+        name: "Sovereign Debt Crisis",
+        desc: "Sovereign bond market dislocation similar to the 2010-2012 European debt crisis, with contagion to banking sector.",
+        severity: "severe",
+        gdp_shock: -0.025,
+        equity_decline: -0.30,
+        yield_shift_bps: 250,
+        re_decline: -0.20,
+        pd_multiplier: 3.5,
+        lgd_multiplier: 1.10,
+        credit_spread_bbb: 350,
+        funding_spread_bps: 180,
+      },
+      moderate_recession: {
+        name: "Moderate Recession",
+        desc: "Standard business-cycle recession with moderate GDP contraction and manageable credit stress.",
+        severity: "moderate",
+        gdp_shock: -0.02,
+        equity_decline: -0.20,
+        yield_shift_bps: -75,
+        re_decline: -0.10,
+        pd_multiplier: 2.0,
+        lgd_multiplier: 1.05,
+        credit_spread_bbb: 200,
+        funding_spread_bps: 80,
+      },
+      rate_shock: {
+        name: "Rapid Rate Rise Shock",
+        desc: "Central bank forced to raise rates sharply to combat inflation, causing bond-market losses without a deep recession.",
+        severity: "moderate",
+        gdp_shock: -0.01,
+        equity_decline: -0.15,
+        yield_shift_bps: 400,
+        re_decline: -0.15,
+        pd_multiplier: 1.8,
+        lgd_multiplier: 1.05,
+        credit_spread_bbb: 200,
+        funding_spread_bps: 120,
+      },
+      extreme_tail: {
+        name: "Extreme Tail Risk",
+        desc: "Highly adverse scenario combining simultaneous geopolitical crisis, sovereign defaults, banking system collapse, and liquidity freeze.",
+        severity: "extreme",
+        gdp_shock: -0.10,
+        equity_decline: -0.70,
+        yield_shift_bps: -300,
+        re_decline: -0.50,
+        pd_multiplier: 10.0,
+        lgd_multiplier: 1.40,
+        credit_spread_bbb: 1000,
+        funding_spread_bps: 500,
+      },
+    };
+
+    /* ── Core loss model (calibrated to Python simulator parameters) ── */
+    function computeStress(sizeB, capPct, rawMix, scenarioKey) {
+      const sc = SCENARIOS[scenarioKey];
+      const total = rawMix.loans + rawMix.bonds + rawMix.equities + rawMix.re + rawMix.derivs;
+      if (total === 0) return null;
+
+      // Normalised fractions
+      const fL = rawMix.loans    / total;
+      const fB = rawMix.bonds    / total;
+      const fE = rawMix.equities / total;
+      const fR = rawMix.re       / total;
+      const fD = rawMix.derivs   / total;
+
+      const loanV = sizeB * fL;
+      const bondV = sizeB * fB;
+      const eqV   = sizeB * fE;
+      const reV   = sizeB * fR;
+      const derivV= sizeB * fD;
+
+      // — Loan credit loss (Vasicek ASRF-inspired) —
+      // base_pd = 1.5%, base_lgd = 45%, stressed by scenario multipliers
+      const BASE_PD = 0.015, BASE_LGD = 0.45;
+      const loanLoss = loanV * BASE_PD * sc.pd_multiplier * BASE_LGD * sc.lgd_multiplier;
+
+      // — Bond MTM loss —
+      // Duration-weighted rate shock (only positive shift causes MTM loss)
+      // plus credit-spread widening on non-sovereign fraction
+      const AVG_DUR = 7.0, NON_SOV = 0.65;
+      const rateMtm    = bondV * AVG_DUR * Math.max(0, sc.yield_shift_bps / 10000);
+      const spreadMtm  = bondV * NON_SOV * AVG_DUR * (sc.credit_spread_bbb * 0.40 / 10000);
+      const bondLoss   = rateMtm + spreadMtm;
+
+      // — Equity loss (direct market exposure) —
+      const eqLoss = eqV * Math.abs(sc.equity_decline);
+
+      // — Real-estate loss (direct price exposure) —
+      const reLoss = reV * Math.abs(sc.re_decline);
+
+      // — Derivative net loss (MV × leverage × blended shock) —
+      const derivLoss = derivV * 3.0 *
+        (Math.abs(sc.equity_decline) * 0.30 + sc.credit_spread_bbb / 10000 * 0.15);
+
+      const combinedLoss = loanLoss + bondLoss + eqLoss + reLoss + derivLoss;
+
+      // — Capital adequacy (Basel III simplified RWA) —
+      const tier1 = sizeB * capPct / 100;
+      const rwa   = loanV * 0.70 + bondV * 0.38 + eqV * 1.50 + reV * 0.80 + derivV * 1.00;
+      const postT1    = Math.max(0, tier1 - combinedLoss);
+      const cet1Ratio = rwa > 0 ? postT1 / rwa : 0;
+
+      return {
+        loanLoss, bondLoss, eqLoss, reLoss, derivLoss,
+        combinedLoss,
+        lossPct: combinedLoss / sizeB,
+        cet1Ratio,
+        dfastPass: cet1Ratio >= 0.045,
+      };
+    }
+
+    /* ── Formatting helpers ─────────────────────────────────────────── */
+    function fmtB(v) {
+      if (v >= 1) return "$" + v.toFixed(1) + "B";
+      return "$" + (v * 1000).toFixed(0) + "M";
+    }
+    function fmtPct(v) { return (v * 100).toFixed(1) + "%"; }
+
+    /* ── DOM helpers ────────────────────────────────────────────────── */
+    function el(id) { return document.getElementById(id); }
+
+    /* ── Update function ────────────────────────────────────────────── */
+    function update() {
+      const scenarioKey = el("sim-scenario").value;
+      const sizeB       = parseFloat(el("sim-size").value);
+      const capPct      = parseFloat(el("sim-cap").value);
+
+      const rawMix = {
+        loans:    parseFloat(el("mix-loans").value),
+        bonds:    parseFloat(el("mix-bonds").value),
+        equities: parseFloat(el("mix-equities").value),
+        re:       parseFloat(el("mix-re").value),
+        derivs:   parseFloat(el("mix-derivs").value),
+      };
+
+      // Normalised percentages for display
+      const total = Object.values(rawMix).reduce((a, b) => a + b, 0) || 1;
+      el("pct-loans").textContent    = Math.round(rawMix.loans    / total * 100) + "%";
+      el("pct-bonds").textContent    = Math.round(rawMix.bonds    / total * 100) + "%";
+      el("pct-equities").textContent = Math.round(rawMix.equities / total * 100) + "%";
+      el("pct-re").textContent       = Math.round(rawMix.re       / total * 100) + "%";
+      el("pct-derivs").textContent   = Math.round(rawMix.derivs   / total * 100) + "%";
+
+      // Slider labels
+      el("sim-size-val").textContent = "$" + sizeB + "B";
+      el("sim-cap-val").textContent  = capPct.toFixed(1) + "%";
+
+      // Severity badge
+      const sc   = SCENARIOS[scenarioKey];
+      const sTag = el("sim-sev-tag");
+      sTag.textContent  = sc.severity.charAt(0).toUpperCase() + sc.severity.slice(1);
+      sTag.className    = "sev-tag " + sc.severity;
+
+      // Scenario description
+      el("sim-sc-desc").textContent = sc.name + " — " + sc.desc;
+
+      // Compute
+      const r = computeStress(sizeB, capPct, rawMix, scenarioKey);
+      if (!r) return;
+
+      // Metrics
+      el("res-loss").textContent     = fmtB(r.combinedLoss);
+      el("res-loss-pct").textContent = fmtPct(r.lossPct);
+      el("res-cet1").textContent     = fmtPct(r.cet1Ratio);
+
+      const dfastEl = el("res-dfast");
+      if (r.dfastPass) {
+        dfastEl.textContent = "✓ PASS";
+        dfastEl.className   = "result-big dfast-pass";
+      } else {
+        dfastEl.textContent = "✗ FAIL";
+        dfastEl.className   = "result-big dfast-fail";
+      }
+
+      // Bar chart — scale bars relative to largest loss
+      const losses = [r.loanLoss, r.bondLoss, r.eqLoss, r.reLoss, r.derivLoss];
+      const maxL   = Math.max(...losses, 0.001);
+      const ids    = ["loans", "bonds", "equities", "re", "derivs"];
+      losses.forEach(function (loss, i) {
+        el("bar-" + ids[i]).style.width = (loss / maxL * 100).toFixed(1) + "%";
+        el("val-" + ids[i]).textContent  = fmtB(loss);
+      });
+    }
+
+    /* ── Wire up all inputs ─────────────────────────────────────────── */
+    ["sim-scenario", "sim-size", "sim-cap",
+     "mix-loans", "mix-bonds", "mix-equities", "mix-re", "mix-derivs"]
+      .forEach(function (id) {
+        el(id).addEventListener("input", update);
+      });
+
+    // Initial render
+    update();
+  })();
+  </script>
 
   <!-- Quick Start -->
   <section>
