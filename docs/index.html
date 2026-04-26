@@ -307,42 +307,47 @@
     var MC = ["#1565c0","#0288d1","#e65100","#2e7d32","#6a1b9a"];
     var LC = ["rgba(21,101,192,0.8)","rgba(2,136,209,0.8)","rgba(230,81,0,0.8)","rgba(46,125,50,0.8)","rgba(106,27,154,0.8)"];
 
-    var cMix = new Chart(g("chart-mix"), {
-      type:"doughnut",
-      data:{ labels:["Loans","Bonds","Equities","Real Estate","Derivatives"], datasets:[{data:[42,28,14,17,1],backgroundColor:MC,borderWidth:2,borderColor:"#fff"}] },
-      options:{ responsive:true,maintainAspectRatio:false,cutout:"60%",
-        plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10,padding:6}},
-          tooltip:{callbacks:{label:function(c){return c.label+": "+c.parsed.toFixed(1)+"%";}}}}}
-    });
-    var cLoss = new Chart(g("chart-loss"), {
-      type:"bar",
-      data:{ labels:["Loans","Bonds","Equities","Real Estate","Derivs"], datasets:[{label:"Loss ($B)",data:[0,0,0,0,0],backgroundColor:LC,borderRadius:4}] },
-      options:{ responsive:true,maintainAspectRatio:false,indexAxis:"y",
-        plugins:{legend:{display:false}},
-        scales:{x:{ticks:{font:{size:10},callback:function(v){return "$"+v.toFixed(1)+"B";}},grid:{color:"#eee"}},y:{ticks:{font:{size:10}}}}}
-    });
-    var cCet1 = new Chart(g("chart-cet1"), {
-      type:"bar",
-      data:{ labels:["Post-Stress CET1","CET1 Min (4.5%)","Tier-1 Min (6.0%)","Total Cap Min (8.0%)"],
-        datasets:[{label:"%",data:[14,4.5,6.0,8.0],backgroundColor:["#1e88e5","rgba(198,40,40,0.2)","rgba(198,40,40,0.2)","rgba(198,40,40,0.2)"],borderColor:["#1565c0","#c62828","#c62828","#c62828"],borderWidth:[2,1,1,1],borderRadius:4}] },
-      options:{ responsive:true,maintainAspectRatio:false,indexAxis:"y",
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.x.toFixed(2)+"%";}}}},
-        scales:{x:{max:25,ticks:{font:{size:10},callback:function(v){return v+"%";}},grid:{color:"#eee"}},y:{ticks:{font:{size:10}}}}}
-    });
-    var cCmp = new Chart(g("chart-cmp"), {
-      type:"bar",
-      data:{ labels:[], datasets:[
-        {label:"Loan Loss",data:[],backgroundColor:"rgba(21,101,192,0.75)",borderRadius:3},
-        {label:"Bond Loss",data:[],backgroundColor:"rgba(2,136,209,0.75)",borderRadius:3},
-        {label:"Equity Loss",data:[],backgroundColor:"rgba(230,81,0,0.75)",borderRadius:3},
-        {label:"RE Loss",data:[],backgroundColor:"rgba(46,125,50,0.75)",borderRadius:3},
-        {label:"Derivative Loss",data:[],backgroundColor:"rgba(106,27,154,0.75)",borderRadius:3}
-      ] },
-      options:{ responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12,padding:10}},
-          tooltip:{callbacks:{label:function(c){return c.dataset.label+": $"+c.parsed.y.toFixed(1)+"B";}}}},
-        scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{font:{size:11},callback:function(v){return "$"+v.toFixed(0)+"B";}},grid:{color:"#eee"}}}}
-    });
+    var cMix = null, cLoss = null, cCet1 = null, cCmp = null;
+    try {
+      if (typeof Chart !== "undefined") {
+        cMix = new Chart(g("chart-mix"), {
+          type:"doughnut",
+          data:{ labels:["Loans","Bonds","Equities","Real Estate","Derivatives"], datasets:[{data:[42,28,14,17,1],backgroundColor:MC,borderWidth:2,borderColor:"#fff"}] },
+          options:{ responsive:true,maintainAspectRatio:false,cutout:"60%",
+            plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10,padding:6}},
+              tooltip:{callbacks:{label:function(c){return c.label+": "+c.parsed.toFixed(1)+"%";}}}}}
+        });
+        cLoss = new Chart(g("chart-loss"), {
+          type:"bar",
+          data:{ labels:["Loans","Bonds","Equities","Real Estate","Derivs"], datasets:[{label:"Loss ($B)",data:[0,0,0,0,0],backgroundColor:LC,borderRadius:4}] },
+          options:{ responsive:true,maintainAspectRatio:false,indexAxis:"y",
+            plugins:{legend:{display:false}},
+            scales:{x:{ticks:{font:{size:10},callback:function(v){return "$"+v.toFixed(1)+"B";}},grid:{color:"#eee"}},y:{ticks:{font:{size:10}}}}}
+        });
+        cCet1 = new Chart(g("chart-cet1"), {
+          type:"bar",
+          data:{ labels:["Post-Stress CET1","CET1 Min (4.5%)","Tier-1 Min (6.0%)","Total Cap Min (8.0%)"],
+            datasets:[{label:"%",data:[14,4.5,6.0,8.0],backgroundColor:["#1e88e5","rgba(198,40,40,0.2)","rgba(198,40,40,0.2)","rgba(198,40,40,0.2)"],borderColor:["#1565c0","#c62828","#c62828","#c62828"],borderWidth:[2,1,1,1],borderRadius:4}] },
+          options:{ responsive:true,maintainAspectRatio:false,indexAxis:"y",
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.x.toFixed(2)+"%";}}}},
+            scales:{x:{max:25,ticks:{font:{size:10},callback:function(v){return v+"%";}},grid:{color:"#eee"}},y:{ticks:{font:{size:10}}}}}
+        });
+        cCmp = new Chart(g("chart-cmp"), {
+          type:"bar",
+          data:{ labels:[], datasets:[
+            {label:"Loan Loss",data:[],backgroundColor:"rgba(21,101,192,0.75)",borderRadius:3},
+            {label:"Bond Loss",data:[],backgroundColor:"rgba(2,136,209,0.75)",borderRadius:3},
+            {label:"Equity Loss",data:[],backgroundColor:"rgba(230,81,0,0.75)",borderRadius:3},
+            {label:"RE Loss",data:[],backgroundColor:"rgba(46,125,50,0.75)",borderRadius:3},
+            {label:"Derivative Loss",data:[],backgroundColor:"rgba(106,27,154,0.75)",borderRadius:3}
+          ] },
+          options:{ responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{position:"bottom",labels:{font:{size:11},boxWidth:12,padding:10}},
+              tooltip:{callbacks:{label:function(c){return c.dataset.label+": $"+c.parsed.y.toFixed(1)+"B";}}}},
+            scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{font:{size:11},callback:function(v){return "$"+v.toFixed(0)+"B";}},grid:{color:"#eee"}}}}
+        });
+      }
+    } catch(e) {}
 
     function update() {
       var key = g("sim-scenario").value, sizeB = +g("sim-size").value, cap = +g("sim-cap").value;
@@ -351,7 +356,7 @@
       var pL=mix.loans/tot*100, pB=mix.bonds/tot*100, pE=mix.equities/tot*100, pR=mix.re/tot*100, pD=mix.derivs/tot*100;
       g("pct-loans").textContent=Math.round(pL)+"%"; g("pct-bonds").textContent=Math.round(pB)+"%";
       g("pct-equities").textContent=Math.round(pE)+"%"; g("pct-re").textContent=Math.round(pR)+"%"; g("pct-derivs").textContent=Math.round(pD)+"%";
-      cMix.data.datasets[0].data=[pL,pB,pE,pR,pD]; cMix.update("none");
+      if(cMix){cMix.data.datasets[0].data=[pL,pB,pE,pR,pD]; cMix.update("none");}
       g("sim-size-val").textContent="$"+sizeB+"B"; g("sim-cap-val").textContent=cap.toFixed(1)+"%";
       var sc=SCENARIOS[key], st=g("sim-sev-tag");
       st.textContent=sc.severity.charAt(0).toUpperCase()+sc.severity.slice(1); st.className="sev-tag "+sc.severity;
@@ -360,8 +365,8 @@
       g("res-loss").textContent=B(r.total); g("res-loss-pct").textContent=P(r.lossPct); g("res-cet1").textContent=P(r.cet1);
       var df=g("res-dfast");
       df.textContent=r.pass?"\u2713 PASS":"\u2717 FAIL"; df.className="result-big "+(r.pass?"dfast-pass":"dfast-fail");
-      cLoss.data.datasets[0].data=[r.lL,r.bL,r.eL,r.rL,r.dL]; cLoss.update("none");
-      cCet1.data.datasets[0].data[0]=r.cet1*100; cCet1.data.datasets[0].backgroundColor[0]=r.pass?"#1e88e5":"#c62828"; cCet1.update("none");
+      if(cLoss){cLoss.data.datasets[0].data=[r.lL,r.bL,r.eL,r.rL,r.dL]; cLoss.update("none");}
+      if(cCet1){cCet1.data.datasets[0].data[0]=r.cet1*100; cCet1.data.datasets[0].backgroundColor[0]=r.pass?"#1e88e5":"#c62828"; cCet1.update("none");}
       var lbs=[],l=[],b=[],e=[],rv=[],dv=[]; var tbody=g("cmp-tbody"); tbody.innerHTML="";
       ORDER.forEach(function(k){
         var s=SCENARIOS[k], r2=compute(sizeB,cap,mix,k); if(!r2) return;
@@ -375,9 +380,9 @@
           "<td class='"+dc+"'>"+(r2.pass?"\u2713 PASS":"\u2717 FAIL")+"</td>";
         tbody.appendChild(tr);
       });
-      cCmp.data.labels=lbs; cCmp.data.datasets[0].data=l; cCmp.data.datasets[1].data=b;
+      if(cCmp){cCmp.data.labels=lbs; cCmp.data.datasets[0].data=l; cCmp.data.datasets[1].data=b;
       cCmp.data.datasets[2].data=e; cCmp.data.datasets[3].data=rv; cCmp.data.datasets[4].data=dv;
-      cCmp.update("none");
+      cCmp.update("none");}
     }
 
     ["sim-scenario","sim-size","sim-cap","mix-loans","mix-bonds","mix-equities","mix-re","mix-derivs"]
