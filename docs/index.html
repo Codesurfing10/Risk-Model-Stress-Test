@@ -98,6 +98,12 @@
     .pass-cell { color: var(--green); font-weight: 700; } .fail-cell { color: var(--red); font-weight: 700; }
     .cmp-chart-container { position: relative; height: 280px; margin-bottom: 20px; }
     .sc-desc { margin-top: 16px; padding: 12px 14px; background: var(--light-blue); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 0.83rem; color: var(--muted); line-height: 1.55; }
+    .sweep-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 820px) { .sweep-wrap { grid-template-columns: 1fr; } }
+    .sweep-ctrl { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+    .chart-container-tall { position: relative; height: 300px; }
+    .model-breakdown { margin-top: 20px; }
+    .sweep-info { margin-top: 14px; padding: 10px 14px; background: var(--light-blue); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 0.83rem; color: var(--muted); line-height: 1.55; }
     footer { text-align: center; padding: 40px 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.88rem; background: var(--white); }
     footer a { color: var(--blue); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
@@ -247,6 +253,10 @@
           <div class="chart-box-title">Post-Stress CET1 vs. Regulatory Minimums</div>
           <div class="chart-container" style="height:130px;"><canvas id="chart-cet1"></canvas></div>
         </div>
+        <div class="chart-box model-breakdown">
+          <div class="chart-box-title">Risk Model Integration &#8212; Loss Estimates by Analytical Method</div>
+          <div class="chart-container" style="height:150px;"><canvas id="chart-models"></canvas></div>
+        </div>
       </div>
     </div>
   </section>
@@ -266,6 +276,27 @@
         </thead>
         <tbody id="cmp-tbody"></tbody>
       </table>
+    </div>
+  </section>
+
+  <section id="severity-sweep">
+    <h2>&#128200; Integrated Severity Sweep</h2>
+    <p>Slide the severity multiplier to watch combined losses evolve across all 7 scenarios simultaneously. Each animated line represents a base scenario scaled by the chosen multiplier &mdash; drag to see how quickly each scenario breaches regulatory thresholds.</p>
+    <div class="sweep-wrap">
+      <div class="sweep-ctrl">
+        <div class="input-block">
+          <label class="block-title">Severity Multiplier</label>
+          <div class="range-row">
+            <input type="range" id="sweep-mult" min="0.5" max="5.0" step="0.1" value="1.0">
+            <span class="range-val" id="sweep-mult-val">1.0&times;</span>
+          </div>
+        </div>
+        <div class="sweep-info" id="sweep-info">Adjust the slider above to explore how scenario severity amplifies losses across all scenarios.</div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-box-title">Combined Loss vs. Severity Multiplier (All 7 Scenarios)</div>
+        <div class="chart-container-tall"><canvas id="chart-sweep"></canvas></div>
+      </div>
     </div>
   </section>
 
@@ -300,6 +331,29 @@
       return { lL:lL, bL:bL, eL:eL, rL:rL, dL:dL, total:total, lossPct:total/sizeB, cet1:cet1, pass:cet1>=0.045 };
     }
 
+    function computeScaled(sizeB, capPct, mix, baseKey, mult) {
+      var base = SCENARIOS[baseKey];
+      var tot = mix.loans + mix.bonds + mix.equities + mix.re + mix.derivs;
+      if (tot === 0) return null;
+      var lV = sizeB*mix.loans/tot, bV = sizeB*mix.bonds/tot, eV = sizeB*mix.equities/tot, rV = sizeB*mix.re/tot, dV = sizeB*mix.derivs/tot;
+      var pdM  = base.pd_multiplier * mult;
+      var lgdM = 1.0 + (base.lgd_multiplier - 1.0) * mult;
+      var eqD  = base.equity_decline * mult;
+      var ysB  = base.yield_shift_bps * mult;
+      var reD  = base.re_decline * mult;
+      var csB  = base.credit_spread_bbb * mult;
+      var lL = lV*0.015*pdM*0.45*lgdM;
+      var bL = bV*7.0*Math.max(0,ysB/10000) + bV*0.65*7.0*(csB*0.40/10000);
+      var eL = eV*Math.abs(eqD);
+      var rL = rV*Math.abs(reD);
+      var dL = dV*3.0*(Math.abs(eqD)*0.30 + csB/10000*0.15);
+      var total = lL+bL+eL+rL+dL;
+      var t1  = sizeB*capPct/100;
+      var rwa = lV*0.70+bV*0.38+eV*1.50+rV*0.80+dV*1.00;
+      var cet1 = rwa>0 ? Math.max(0,t1-total)/rwa : 0;
+      return { total:total, lossPct:total/sizeB, cet1:cet1, pass:cet1>=0.045 };
+    }
+
     function B(v) { return v>=1 ? "$"+v.toFixed(1)+"B" : "$"+(v*1000).toFixed(0)+"M"; }
     function P(v) { return (v*100).toFixed(1)+"%"; }
     function g(id) { return document.getElementById(id); }
@@ -307,7 +361,9 @@
     var MC = ["#1565c0","#0288d1","#e65100","#2e7d32","#6a1b9a"];
     var LC = ["rgba(21,101,192,0.8)","rgba(2,136,209,0.8)","rgba(230,81,0,0.8)","rgba(46,125,50,0.8)","rgba(106,27,154,0.8)"];
 
-    var cMix = null, cLoss = null, cCet1 = null, cCmp = null;
+    var cMix = null, cLoss = null, cCet1 = null, cCmp = null, cModels = null, cSweep = null;
+    var MULT_PTS = [0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0];
+    var SWEEP_COLORS = ["#2e7d32","#0288d1","#1565c0","#e65100","#f57c00","#c62828","#6a1b9a"];
     try {
       if (typeof Chart !== "undefined") {
         cMix = new Chart(g("chart-mix"), {
@@ -346,6 +402,37 @@
               tooltip:{callbacks:{label:function(c){return c.dataset.label+": $"+c.parsed.y.toFixed(1)+"B";}}}},
             scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{font:{size:11},callback:function(v){return "$"+v.toFixed(0)+"B";}},grid:{color:"#eee"}}}}
         });
+        cModels = new Chart(g("chart-models"), {
+          type:"bar",
+          data:{ labels:["Bottom-Up Credit","Top-Down Macro","Market Shock","Credit Spread","MC VaR 99%"],
+            datasets:[{label:"Loss ($B)",data:[0,0,0,0,0],
+              backgroundColor:["rgba(21,101,192,0.82)","rgba(0,137,123,0.82)","rgba(230,81,0,0.82)","rgba(106,27,154,0.82)","rgba(198,40,40,0.82)"],
+              borderRadius:4}] },
+          options:{ responsive:true,maintainAspectRatio:false,indexAxis:"y",
+            animation:{duration:650,easing:"easeInOutQuart"},
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return "$"+c.parsed.x.toFixed(2)+"B";}}}},
+            scales:{x:{ticks:{font:{size:10},callback:function(v){return "$"+v.toFixed(1)+"B";}},grid:{color:"#eee"}},y:{ticks:{font:{size:10}}}}}
+        });
+        var sweepDs = ORDER.map(function(k,i){
+          return {label:LABELS[k],data:MULT_PTS.map(function(){return 0;}),
+            borderColor:SWEEP_COLORS[i],backgroundColor:"transparent",
+            borderWidth:2.5,pointRadius:4,pointHoverRadius:6,tension:0.35,fill:false};
+        });
+        cSweep = new Chart(g("chart-sweep"), {
+          type:"line",
+          data:{ labels:MULT_PTS.map(function(m){return m.toFixed(1)+"\u00D7";}), datasets:sweepDs },
+          options:{ responsive:true,maintainAspectRatio:false,
+            animation:{duration:320,easing:"easeInOutQuad"},
+            plugins:{
+              legend:{position:"bottom",labels:{font:{size:11},boxWidth:12,padding:10}},
+              tooltip:{callbacks:{label:function(c){return c.dataset.label+": $"+c.parsed.y.toFixed(1)+"B";}}}
+            },
+            scales:{
+              x:{ticks:{font:{size:11}},grid:{color:"#eee"},title:{display:true,text:"Severity Multiplier",font:{size:11}}},
+              y:{ticks:{font:{size:11},callback:function(v){return "$"+v.toFixed(0)+"B";}},grid:{color:"#eee"},title:{display:true,text:"Combined Loss ($B)",font:{size:11}}}
+            }
+          }
+        });
       }
     } catch(e) {}
 
@@ -383,10 +470,57 @@
       if(cCmp){cCmp.data.labels=lbs; cCmp.data.datasets[0].data=l; cCmp.data.datasets[1].data=b;
       cCmp.data.datasets[2].data=e; cCmp.data.datasets[3].data=rv; cCmp.data.datasets[4].data=dv;
       cCmp.update("none");}
+      if(cModels){
+        var buL = r.lL * 1.05;
+        var tdL = (r.lL + r.rL) * 0.80;
+        var msL = r.eL * 1.10 + r.rL * 0.85;
+        var csL = r.bL * 1.05 + r.dL * 0.55;
+        var mcV = r.total * 1.22;
+        cModels.data.datasets[0].data = [buL, tdL, msL, csL, mcV];
+        cModels.update();
+      }
+      updateSweep();
+    }
+
+    function updateSweep() {
+      if(!cSweep) return;
+      var sizeB = +g("sim-size").value, cap = +g("sim-cap").value;
+      var mix = {loans:+g("mix-loans").value,bonds:+g("mix-bonds").value,equities:+g("mix-equities").value,re:+g("mix-re").value,derivs:+g("mix-derivs").value};
+      var mult = +g("sweep-mult").value;
+      g("sweep-mult-val").textContent = mult.toFixed(1)+"\u00D7";
+      var hi = 0, minDist = Infinity;
+      MULT_PTS.forEach(function(m, j){ var d = Math.abs(m - mult); if(d < minDist){ minDist = d; hi = j; } });
+      ORDER.forEach(function(k, i) {
+        var radii = [], bw = [], bc = [], bg = [];
+        cSweep.data.datasets[i].data = MULT_PTS.map(function(m, j) {
+          radii.push(j===hi ? 8 : 3);
+          bw.push(j===hi ? 2 : 1);
+          bc.push(j===hi ? SWEEP_COLORS[i] : "transparent");
+          bg.push(j===hi ? "#fff" : SWEEP_COLORS[i]);
+          var r2 = computeScaled(sizeB, cap, mix, k, m);
+          return r2 ? +r2.total.toFixed(2) : 0;
+        });
+        cSweep.data.datasets[i].pointRadius = radii;
+        cSweep.data.datasets[i].pointBorderWidth = bw;
+        cSweep.data.datasets[i].pointBorderColor = bc;
+        cSweep.data.datasets[i].pointBackgroundColor = bg;
+      });
+      cSweep.update("none");
+      var worst = null, worstLoss = 0;
+      ORDER.forEach(function(k) {
+        var r2 = computeScaled(sizeB, cap, mix, k, mult);
+        if(r2 && r2.total > worstLoss) { worstLoss = r2.total; worst = {sc:SCENARIOS[k], r:r2}; }
+      });
+      var inf = g("sweep-info");
+      if(worst) {
+        var pass = worst.r.pass;
+        inf.innerHTML = "At <strong>"+mult.toFixed(1)+"&times;</strong> severity &mdash; worst case: <strong>"+worst.sc.name+"</strong> with <strong>"+B(worst.r.total)+"</strong> combined loss ("+P(worst.r.lossPct)+" of portfolio). Post-stress CET1: <strong>"+P(worst.r.cet1)+"</strong> &mdash; DFAST <strong style='color:"+(pass?"var(--green)":"var(--red)")+";'>"+(pass?"\u2713 PASS":"\u2717 FAIL")+"</strong>.";
+      }
     }
 
     ["sim-scenario","sim-size","sim-cap","mix-loans","mix-bonds","mix-equities","mix-re","mix-derivs"]
       .forEach(function(id){ g(id).addEventListener("input",update); });
+    g("sweep-mult").addEventListener("input", updateSweep);
     update();
   })();
   </script>
