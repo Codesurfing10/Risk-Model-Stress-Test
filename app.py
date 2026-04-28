@@ -39,8 +39,64 @@ st.set_page_config(
     page_title="Banking Stress Test Simulator",
     page_icon="🏦",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
+
+# ---------------------------------------------------------------------------
+# Mobile-responsive CSS
+# ---------------------------------------------------------------------------
+
+_MOBILE_CSS = """
+<style>
+/* ── Stack columns vertically on small screens ── */
+@media (max-width: 640px) {
+    /* Each Streamlit column becomes full-width */
+    [data-testid="column"] {
+        width: 100% !important;
+        flex: none !important;
+        min-width: 100% !important;
+    }
+
+    /* Tighten container padding */
+    .block-container {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        padding-top: 1.5rem !important;
+        max-width: 100% !important;
+    }
+
+    /* Horizontal scroll for wide tables */
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"] {
+        overflow-x: auto !important;
+    }
+
+    /* Scale down headings */
+    h1 { font-size: 1.4rem !important; }
+    h2 { font-size: 1.15rem !important; }
+    h3 { font-size: 1.05rem !important; }
+
+    /* Prevent metric labels from overflowing */
+    [data-testid="metric-container"] {
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+    }
+}
+
+/* ── Slightly tighten layout on tablets too ── */
+@media (max-width: 900px) {
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
+</style>
+"""
+
+
+def _inject_mobile_css():
+    st.markdown(_MOBILE_CSS, unsafe_allow_html=True)
+
 
 # ---------------------------------------------------------------------------
 # Colour palette
@@ -622,7 +678,12 @@ python -m pytest tests/test_stress_test.py -v
 
 def main():
     _init_state()
+    _inject_mobile_css()
     run_clicked = render_sidebar()
+
+    # Mobile-friendly header with sidebar toggle hint
+    st.title("🏦 Banking Stress Test Simulator")
+    st.caption("Tap **☰** (top-left) to open the settings panel.")
 
     if run_clicked:
         run_simulation()
