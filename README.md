@@ -22,14 +22,22 @@ Additional modules:
 
 ## Quick Start
 
+### Web Dashboard (Streamlit)
+
 ```bash
 pip install -r requirements.txt
+streamlit run app.py
+```
+
+Open your browser to `http://localhost:8501`.
+
+### Command-line example
+
+```bash
 python examples/run_stress_test.py
 ```
 
 ---
-
-## Architecture
 
 ```
 stress_test/
